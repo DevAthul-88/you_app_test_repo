@@ -1,0 +1,331 @@
+openapi: 3.0.0
+info:
+  title: API Documentation
+  description: |
+    This API documentation covers the **Auth**, **Chat**, and **Users** modules.
+    - **Auth**: Handles user registration and login.
+    - **Chat**: Manages messaging, blocking, and unblocking users.
+    - **Users**: Manages user profiles, including profile creation, updates, and deletion.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+paths:
+  # ======================
+  # Auth Module
+  # ======================
+  /api/register:
+    post:
+      summary: Register a new user
+      description: |
+        Register a new user with their email, username, and password.
+        Returns the created user and an access token for authentication.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterDto'
+      responses:
+        '200':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  access_token:
+                    type: string
+                    description: JWT token for authenticated requests
+  /api/login:
+    post:
+      summary: Login a user
+      description: |
+        Authenticate a user with their username and password.
+        Returns a JWT token for accessing protected routes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginDto'
+      responses:
+        '200':
+          description: User logged in successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    description: JWT token for authenticated requests
+
+  # ======================
+  # Chat Module
+  # ======================
+  /chat/sendMessage:
+    post:
+      summary: Send a message
+      description: |
+        Send a message from one user to another.
+        Requires the sender's ID, receiver's ID, and the message content.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageDto'
+      responses:
+        '200':
+          description: Message sent successfully
+        '400':
+          description: Bad request (e.g., invalid input or missing fields)
+  /chat/viewMessages/{userId}/{contactId}:
+    get:
+      summary: View messages between two users
+      description: |
+        Retrieve all messages exchanged between two users.
+        Requires the IDs of both users.
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the first user
+        - name: contactId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the second user
+      responses:
+        '200':
+          description: Messages retrieved successfully
+        '400':
+          description: Bad request (e.g., invalid user IDs)
+  /chat/deleteMessage/{messageId}:
+    delete:
+      summary: Delete a message
+      description: |
+        Delete a specific message by its ID.
+        Returns a success message if the deletion is successful.
+      parameters:
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the message to delete
+      responses:
+        '200':
+          description: Message deleted successfully
+        '404':
+          description: Message not found
+        '400':
+          description: Bad request (e.g., invalid message ID)
+  /chat/block/{blockerId}/{blockedId}:
+    post:
+      summary: Block a user
+      description: |
+        Block a user by their ID.
+        Requires the IDs of the blocker and the blocked user.
+      parameters:
+        - name: blockerId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the user who is blocking
+        - name: blockedId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the user being blocked
+      responses:
+        '200':
+          description: User blocked successfully
+        '400':
+          description: Bad request (e.g., invalid user IDs)
+  /chat/unblock/{blockerId}/{blockedId}:
+    post:
+      summary: Unblock a user
+      description: |
+        Unblock a previously blocked user by their ID.
+        Requires the IDs of the blocker and the blocked user.
+      parameters:
+        - name: blockerId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the user who is unblocking
+        - name: blockedId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the user being unblocked
+      responses:
+        '200':
+          description: User unblocked successfully
+        '400':
+          description: Bad request (e.g., invalid user IDs)
+
+  # ======================
+  # Users Module
+  # ======================
+  /api/createProfile:
+    post:
+      summary: Create a user profile
+      description: |
+        Create a profile for the authenticated user.
+        Supports uploading a profile image (JPEG, PNG, or GIF, max 5MB).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateProfileDto'
+      responses:
+        '200':
+          description: Profile created successfully
+        '400':
+          description: Bad request (e.g., invalid file type or size)
+  /api/getProfile:
+    get:
+      summary: Get user profile
+      description: |
+        Retrieve the profile of the authenticated user.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved successfully
+        '400':
+          description: Bad request (e.g., invalid user ID)
+  /api/updateProfile:
+    put:
+      summary: Update user profile
+      description: |
+        Update the profile of the authenticated user.
+        Supports updating profile details and uploading a new profile image.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateProfileDto'
+      responses:
+        '200':
+          description: Profile updated successfully
+        '400':
+          description: Bad request (e.g., invalid file type or size)
+  /api/deleteProfile:
+    delete:
+      summary: Delete user profile
+      description: |
+        Delete the profile of the authenticated user.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile deleted successfully
+        '400':
+          description: Bad request (e.g., invalid user ID)
+
+# ======================
+# Components
+# ======================
+components:
+  schemas:
+    RegisterDto:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: User's email address
+        username:
+          type: string
+          description: User's username
+        password:
+          type: string
+          description: User's password
+      required:
+        - email
+        - username
+        - password
+    LoginDto:
+      type: object
+      properties:
+        username:
+          type: string
+          description: User's username
+        password:
+          type: string
+          description: User's password
+      required:
+        - username
+        - password
+    SendMessageDto:
+      type: object
+      properties:
+        senderId:
+          type: string
+          description: ID of the sender
+        receiverId:
+          type: string
+          description: ID of the receiver
+        message:
+          type: string
+          description: Content of the message
+      required:
+        - senderId
+        - receiverId
+        - message
+    CreateProfileDto:
+      type: object
+      properties:
+        firstName:
+          type: string
+          description: User's first name
+        lastName:
+          type: string
+          description: User's last name
+        bio:
+          type: string
+          description: User's bio
+        profileImage:
+          type: string
+          format: binary
+          description: User's profile image (JPEG, PNG, or GIF, max 5MB)
+      required:
+        - firstName
+        - lastName
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          description: User's unique ID
+        email:
+          type: string
+          format: email
+          description: User's email address
+        username:
+          type: string
+          description: User's username
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
